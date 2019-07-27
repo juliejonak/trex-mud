@@ -64,88 +64,66 @@ map.isSolidTileAtXY = (x,y) => {
     }, false) // Passes in false as default res value
 }
 
+// SCROLL-VIEW RENDERING
+
 // Iterates over the columns and rows to render the map:
 // context: a 2D canvas context
 // titleAtlas: an image object that contains the tile map
 // map: the tile map object
 
+Game._drawLayer = (layer) => {
+    // To scroll view, we need to partially render some tiles
+    // This requires tracking our starting points
 
-// NON-SCROLL MAP RENDERING
+    const startColumn = Math.floor(this.camera.x / map.tile_size);
+    const endColumn = startColumn + (this.camera.width / map.tile_size);
+    const startRow = Math.floor(this.camera.y / map.tile_size);
+    const endRow = startRow + (this.camera.height / map.tile_size);
 
-// for (let i=0; i < map.columns; i++){
-//     for (let x=0; x < map.rows; x++){
-//         const tile = map.getTile(i,x);
-//         // If NOT an empty tile (0)
-//         if (tile !== 0){
-//             context.drawImage( 
-//                 // the tileset image
-//                 tileAtlas,
-//                 // top left x-axis coord of source
-//                 (tile - 1) * map.tile_size, 
-//                 // top left y-axis coord of source
-//                 0,
-//                 // width to draw from source (64px)
-//                 map.tile_size,
-//                 // height to draw from source (64px)
-//                 map.tile_size,
-//                 // x-axis coord to place top left of new image
-//                 i * map.tile_size,
-//                 // y-axis coord to place top left of new image
-//                 x * map.tile_size,
-//                 // the width to draw in the canvas (64px)
-//                 map.tile_size,
-//                 // the height to draw in the canvas (64px)
-//                 map.tile_size
-//             )
-//         }
-//     }
-// }
+    // We'll calculate how much to offset the tiles from the typical starting (0,0) point based on keeping the sprite centered in the camera view
 
-// SCROLL-VIEW RENDERING
+    const offsetX = -this.camera.x + startColumn * map.tile_size;
+    const offsetY = -this.camera.y + startRow * map.tile_size;
 
-// To scroll view, we need to partially render some tiles
-// This requires tracking our starting points
-
-const startColumn = Math.floor(this.camera.x / map.tile_size);
-const endColumn = startColumn + (this.camera.width / map.tile_size);
-const startRow = Math.floor(this.camera.y / map.tile_size);
-const endRow = startRow + (this.camera.height / map.tile_size);
-
-// We'll calculate how much to offset the tiles from the typical starting (0,0) point based on keeping the sprite centered in the camera view
-
-const offsetX = -this.camera.x + startColumn * map.tile_size;
-const offsetY = -this.camera.y + startRow * map.tile_size;
-
-// The loop is similar except adds the offset values to x and y coords
-// Plus we have to round those values to avoid floating points
-for (let i=0; i < map.columns; i++){
-    for (let j=0; j < map.rows; j++){
-        const tile = map.getTile(i,j);
-        const X = (i - startColumn) * map.tile_size + offsetX;
-        const Y = (i - startRow) * map.tile_size + offsetY;
-        // If NOT an empty tile (0)
-        if (tile !== 0){
-            context.drawImage( 
-                // the tileset image
-                tileAtlas,
-                // top left x-axis coord of source
-                (tile - 1) * map.tile_size, 
-                // top left y-axis coord of source
-                0,
-                // width to draw from source (64px)
-                map.tile_size,
-                // height to draw from source (64px)
-                map.tile_size,
-                // x-axis coord to place top left of new image
-                Math.round(X),
-                // y-axis coord to place top left of new image
-                Math.round(y),
-                // the width to draw in the canvas (64px)
-                map.tile_size,
-                // the height to draw in the canvas (64px)
-                map.tile_size
-            )
+    // The loop is similar except adds the offset values to x and y coords
+    // Plus we have to round those values to avoid floating points
+    for (let i=startColumn; i <= endColumn; i++){
+        for (let j=startRow; j <= endRow; j++){
+            const tile = map.getTile(layer, i, j);
+            const X = (i - startColumn) * map.tile_size + offsetX;
+            const Y = (i - startRow) * map.tile_size + offsetY;
+            // If NOT an empty tile (0)
+            if (tile !== 0){
+                this.context.drawImage( 
+                    // the tileset image
+                    this.tileAtlas,
+                    // top left x-axis coord of source
+                    (tile - 1) * map.tile_size, 
+                    // top left y-axis coord of source
+                    0,
+                    // width to draw from source (64px)
+                    map.tile_size,
+                    // height to draw from source (64px)
+                    map.tile_size,
+                    // x-axis coord to place top left of new image
+                    Math.round(X),
+                    // y-axis coord to place top left of new image
+                    Math.round(Y),
+                    // the width to draw in the canvas (64px)
+                    map.tile_size,
+                    // the height to draw in the canvas (64px)
+                    map.tile_size
+                )
+            }
         }
-    }
-};
+    };
+}
 
+
+Game.render = () => {
+    // Draw the background map layer
+    this._drawLayer(0);
+    // Draw the top layer
+    this._drawLayer(1)
+    // Could add more as needed
+}
