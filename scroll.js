@@ -122,7 +122,8 @@ function sprite(map, x, y) {
     this.width = map.tile_size;
     this.height = map.tile_size;
 
-    this.image = Loader.getImage('sprite');
+    this.image = Loader.getImage('sprite')
+    this.mirrorImage = Loader.getImage('mirrorSprite');
 }
 
 sprite.SPEED = 256; // Pixels per second movement
@@ -186,7 +187,8 @@ sprite.prototype._collide = function (directionX, directionY) {
 Game.load = function () {
     return [
         Loader.loadImage('tiles', 'tiles.png'),
-        Loader.loadImage('sprite', 'trex.png')
+        Loader.loadImage('sprite', 'trex.png'),
+        Loader.loadImage('mirrorSprite', 'trex_mirror.png')
     ];
 };
 
@@ -204,8 +206,8 @@ Game.update = function (delta) {
     // Handle the Sprite's movements with arrow keys
     let directionX = 0;
     let directionY = 0;
-    if (Keyboard.isDown(Keyboard.LEFT)) { directionX = -1; }
-    else if (Keyboard.isDown(Keyboard.RIGHT)) { directionX = 1; }
+    if (Keyboard.isDown(Keyboard.LEFT)) { directionX = -1; this.sprite.image = Loader.getImage('mirrorSprite') }
+    else if (Keyboard.isDown(Keyboard.RIGHT)) { directionX = 1; this.sprite.image = Loader.getImage('sprite')}
     else if (Keyboard.isDown(Keyboard.UP)) { directionY = -1; }
     else if (Keyboard.isDown(Keyboard.DOWN)) { directionY = 1; }
 
