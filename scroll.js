@@ -91,16 +91,107 @@ const Camera = (map, width, height) => {
     this.maxY = map.row * map.tile_size - height;
 };
 
-Camera.SPEED = 256; // Pixels per second
+Camera.prototype.follow = (sprite) => {
+    this.following = sprite;
+    sprite.screenX = 0;
+    sprite.screenY = 0;
+};
 
 Camera.prototype.move = (delta, directionX, directionY) => {
-    // Moves the camera
-    this.x += directionX * Camera.SPEED * delta;
-    this.y += directionY * Camera.SPEED * delta;
+    // Sets camera to center the Sprite to the view
+    this.following.screenX = this.width / 2;
+    this.following.screenY = this.height / 2;
+
+    // Sets the camera to follow the Sprite with this view
+    this.x = this.following.x - this.width / 2;
+    this.y = this.following.y - this.height / 2;
+
     // Sets constraints on x and y to the larger of 0 or the smaller of x/y or maxx/y
     this.x = Math.max(0, Math.min(this.x, this.maxX))
     this.y = Math.max(0, Math.min(this.y, this.maxY))
+
+    // Handles the edge case of Sprite going to the corners of the map, where the camera cannot center the Sprite (nothing to render beyond map borders)
+
+    // Updates left/right screen coords
+    if (this.following.x < this.width / 2 ||
+        this.following.x > this.maxX + this.width / 2){
+            this.following.screenX = this.following.x - this.x;
+        }
+
+    // Updates top/bottom screen coords
+    if (this.following.y < this.height / 2 ||
+        this.following.y > this.maxY + this.height / 2){
+            this.following.screenY = this.following.y - this.y;
+        }
 };
+
+
+
+// Creates Sprite
+
+const Sprite = (map, x, y) => {
+    this.map = map;
+    this.x = x;
+    this.y = y;
+    this.width = map.tile_size;
+    this.height = map.tile_size;
+
+    this.image = Loeader.getImage('sprite');
+};
+
+Sprite.SPEED = 256; // Pixels per second movement
+
+Sprite.prototype.move = (delta, directionX, directionY) => {
+    // Moves Sprite around
+    this.x += directionX * Sprite.SPEED * delta;
+    this.y += directionY * Sprite.SPEED * delta;
+
+    // Verify whether or not the sprite walks into an obstacle
+    this._collide(directionX, directionY)
+
+     // Sets constraints on x and y to the larger of 0 or the smaller of x/y or maxx/y
+     this.x = Math.max(0, Math.min(this.x, this.maxX))
+     this.y = Math.max(0, Math.min(this.y, this.maxY))
+};
+
+Sprite.prototype._collide = (directionX, directionY) => {
+    let row, column;
+
+    // Sets parameters to check. Current coords - (width/2) 
+    // On the right and bottom, it's Current coords - (width/ 2-1) becuase we're checking up to 63px in width (not borders)
+    const left = this.x - this.width / 2;
+    const right = this.x - this.width / 2-1;
+    const top = this.y - this.height / 2;
+    const bottom = this.y - this.height / 2-1;
+
+    // Check for obstacles with any of the Sprite's side coords
+    const collision = 
+        this.map.isSolidTileAtXY(left, top) ||
+        this.map.isSolidTileAtXY(right, top) ||
+        this.map.isSolidTileAtXY(right, bottom) ||
+        this.map.isSolidTileAtXY(left, bottom);
+    // If no collision, Sprite can keep moving
+    if (!collision){ return; }
+
+    // If collision, update x/y coords on Sprite where halted by obstacl
+    if (directionY > 0){
+        row = this.map.getRow(top);
+        this.y = -this.height / 2 + this.map.getY(row);
+    }
+    else if (directionY < 0){
+        row = this.map.getRow(top);
+        this.y = this.height / 2 + this.map.getY(row+1);
+    }
+    else if (directionX > 0){
+        column = this.map.getColumn(right);
+        this.x = -this.width / 2 + this.map.getX(column);
+    }
+    else if (directionX < 0){
+        column = this.map.getColumn(left);
+        this.x = this.width / 2 + this.map.getX(column+1);
+    }
+};
+
 
 
 
@@ -109,6 +200,7 @@ Camera.prototype.move = (delta, directionX, directionY) => {
 Game.load = () => {
     return [
         Loader.loadImage('tiles', 'tiles.png'),
+        Loader.loadImage('sprite', 'trex.png')
     ];
 };
 
@@ -117,8 +209,11 @@ Game.init = () => {
         [Keyboard.LEFT, Keyboard.RIGHT, Keyboard.UP, Keyboard.DOWN]
     );
     this.tileAtlas = Loader.getImage('tiles');
+
+    this.sprite = new Sprite(map, 160, 160);
     this.camera = new Camera(map, 512, 512);
-}
+    this.camera.follow(this.hero);
+};
 
 Game.update = (delta) => {
     // Handle the camera movements with arrow keys
@@ -129,7 +224,8 @@ Game.update = (delta) => {
     if (Keyboard.isDown(Keyboard.UP)){ directionY = -1 }
     if (Keyboard.isDown(Keyboard.DOWN)){ directionY = 1 }
 
-    this.camera.move(delta, directionX, directionY);
+    this.sprite.move(delta, directionX, directionY);
+    this.camera.update();
 };
 
 // SCROLL-VIEW RENDERING
@@ -184,14 +280,23 @@ Game._drawLayer = (layer) => {
                 )
             }
         }
-    };
-}
+    }
+};
 
 
 Game.render = () => {
     // Draw the background map layer
     this._drawLayer(0);
+
+    // Draw the Sprite
+    this.ctx.drawImage(
+        this.sprite.image,
+        this.sprite.screenX = this.sprite.width / 2,
+        this.sprite.screenY = this.sprite.height / 2
+    );
+
     // Draw the top layer
     this._drawLayer(1)
+
     // Could add more as needed
-}
+};
