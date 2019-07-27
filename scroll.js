@@ -62,7 +62,75 @@ map.isSolidTileAtXY = (x,y) => {
         // If True, will return true; else default of false
         return res || isSolid
     }, false) // Passes in false as default res value
+};
+
+map.getColumn = (x) => {
+    return Math.floor(x / this.tile_size)
+};
+
+map.getRow = (y) => {
+    return Math.floor(y / this.tile_size)
+};
+
+map.getX = (column) => {
+    return column * this.tile_size
+};
+
+map.getY = (row) => {
+    return row * this.tile_size
+};
+
+
+// Creates Camera view
+const Camera = (map, width, height) => {
+    this.x = 0;
+    this.y = 0;
+    this.width = width;
+    this.height = height;
+    this.maxX = map.columns * map.tile_size - width;
+    this.maxY = map.row * map.tile_size - height;
+};
+
+Camera.SPEED = 256; // Pixels per second
+
+Camera.prototype.move = (delta, directionX, directionY) => {
+    // Moves the camera
+    this.x += directionX * Camera.SPEED * delta;
+    this.y += directionY * Camera.SPEED * delta;
+    // Sets constraints on x and y to the larger of 0 or the smaller of x/y or maxx/y
+    this.x = Math.max(0, Math.min(this.x, this.maxX))
+    this.y = Math.max(0, Math.min(this.y, this.maxY))
+};
+
+
+
+// Initializes common.js Game helper functions
+
+Game.load = () => {
+    return [
+        Loader.loadImage('tiles', 'tiles.png'),
+    ];
+};
+
+Game.init = () => {
+    Keyboard.listenForEvents(
+        [Keyboard.LEFT, Keyboard.RIGHT, Keyboard.UP, Keyboard.DOWN]
+    );
+    this.tileAtlas = Loader.getImage('tiles');
+    this.camera = new Camera(map, 512, 512);
 }
+
+Game.update = (delta) => {
+    // Handle the camera movements with arrow keys
+    let directionX = 0;
+    let directionY = 0;
+    if (Keyboard.isDown(Keyboard.LEFT)){ directionX = -1 }
+    if (Keyboard.isDown(Keyboard.RIGHT)){ directionX = 1 }
+    if (Keyboard.isDown(Keyboard.UP)){ directionY = -1 }
+    if (Keyboard.isDown(Keyboard.DOWN)){ directionY = 1 }
+
+    this.camera.move(delta, directionX, directionY);
+};
 
 // SCROLL-VIEW RENDERING
 
