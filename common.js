@@ -77,3 +77,50 @@ Keyboard.isDown = (keyCode) => {
     }
     return this._keys[keyCode];
 }
+
+// Game Build
+
+// Each iteration of an event loop is called a tick
+
+let Game = {};
+
+Game.run = (context) => {
+    // ctx means the canvas context
+    this.ctx = context;
+    this._previousElapsed = 0;
+
+    // Loads data from the server and places the returned HTML into the matched elements.
+    const content = this.load()
+    Promise.all(content).then((loaded_data) => {
+        this.init();
+        window.requestAnimationFrame(this.tick);
+    })
+};
+
+Game.tick = (elapsed) => {
+    window.requestAnimationFrame(this.tick);
+
+    // Clears the previous frame with the parameters of the pixels of the frame
+    this.ctx.clearRect(0, 0, 512, 512);
+
+    // Computes the delta time in seconds and adds a cap
+    let delta = (elapsed - this._previousElapsed) / 1000.0;
+    delta = Math.min(delta, 0.25) // Returns the smaller of the two values to cap the delta at 250ms
+    this._previousElapsed = elapsed;
+
+    this.PaymentRequestUpdateEvent(delta);
+    this.CanvasRenderingContext2D();
+};
+
+// We'll override these methods to create the demo according to our own parameters (non-scroll, add obstacles, etc.)
+
+Game.init = () => {};
+Game.update = (delta) => {};
+Game.render = () => {};
+
+// Start the game on window load
+
+window.onload = () => {
+    const context = document.getElementById('demo').getContext('2d');
+    Game.run(context)
+};
